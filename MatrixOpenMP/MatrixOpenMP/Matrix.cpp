@@ -8,7 +8,8 @@ void Matrix::checkData(vector<vector<double>> data) {
 	for each (vector<double> v in data) {
 		if (v.size() != m)
 		{
-			throw exception("Matrix is not rectangle");
+			cerr << "Matrix is not rectangle";
+			exit(1);
 		}
 	}
 }
@@ -55,10 +56,12 @@ istream &operator >> (istream &input, Matrix &matrix) {
 		int n = 0, m = 0;
 		input >> n >> m;
 		if (n < 0) {
-			throw exception("Nagative dimention of the matrix: " + n);
+			cerr << "Nagative dimention of the matrix: " << n;
+			exit(1);
 		}
 		if (m < 0) {
-			throw exception("Nagative dimention of the matrix: " + m);
+			cerr << "Nagative dimention of the matrix: " << m;
+			exit(1);
 		}
 		for (int i = 0; i < n; i++) {
 			vector<double> row;
@@ -96,7 +99,8 @@ ostream &operator << (ostream  &output, Matrix &matrix) {
 
 Matrix Matrix::operator*(Matrix matrix) {
 	if (getCols() != matrix.getRows()) {
-		throw exception("Dimensions does not match!");
+		cerr << "Dimensions does not match!";
+		exit(1);
 	}
 	vector<vector<double>> data;
 	for (int i = 0; i < getRows(); i++) {

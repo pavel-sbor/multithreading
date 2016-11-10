@@ -65,3 +65,5 @@ ipch/
 *.user
 *.userosscache
 *.sln.docstates
+
+output.txt
