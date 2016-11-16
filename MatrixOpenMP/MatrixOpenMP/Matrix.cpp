@@ -9,7 +9,6 @@ void Matrix::checkData(vector<vector<double>> data) {
 	int i = 0;
 #pragma omp parallel for shared(data) private(i)
 	for (i = 0; i < data.size(); i++) {
-		//cout << "Thread " << num << " size: " << data[i].size() << " iteration: " << i << endl;
 		if (data[i].size() != m)
 		{
 			cerr << "Matrix is not rectangle";
@@ -108,14 +107,15 @@ Matrix Matrix::operator*(Matrix matrix) {
 		exit(1);
 	}
 	Matrix resultMatrix(getRows(), matrix.getCols());
-	int i, j, ij;
-#pragma omp parallel for shared(matrix, resultMatrix) private(i, j, ij)
-	for (ij = 0; ij < getRows()*matrix.getCols(); ij++) {
-		i = ij / matrix.getCols();
-		j = ij % matrix.getCols();
-		for (int k = 0; k < getCols(); k++) {
-			resultMatrix[i][j] += ((*this)[i][k]) * matrix[k][j];
-		}
+	int i, j, k, ijk;
+#pragma omp parallel for shared(matrix, resultMatrix) private(i, j, k, ijk)
+	for (ijk = 0; ijk < getRows()*matrix.getCols()*getCols(); ijk++) {
+		k = ijk % getCols();
+		i = ijk / getCols() / matrix.getCols();
+		j = ijk / getCols() % matrix.getCols();
+		double resultCellInc = ((*this)[i][k]) * matrix[k][j];
+#pragma omp atomic
+		resultMatrix[i][j] += resultCellInc;
 	}
 	return resultMatrix;
 }
