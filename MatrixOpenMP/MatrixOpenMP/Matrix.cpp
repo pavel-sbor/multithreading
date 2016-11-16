@@ -1,12 +1,16 @@
 #include "stdafx.h"
 #include "Matrix.h"
+#include <omp.h>
 #include <iostream>
 using namespace std;
 
 void Matrix::checkData(vector<vector<double>> data) {
 	int m = data[0].size();
-	for each (vector<double> v in data) {
-		if (v.size() != m)
+	int i = 0;
+#pragma omp parallel for shared(data) private(i)
+	for (i = 0; i < data.size(); i++) {
+		//cout << "Thread " << num << " size: " << data[i].size() << " iteration: " << i << endl;
+		if (data[i].size() != m)
 		{
 			cerr << "Matrix is not rectangle";
 			exit(1);
@@ -24,6 +28,14 @@ Matrix::Matrix(vector<vector<double>> data)
 	setData(data);
 }
 
+Matrix::Matrix(int n, int m)
+{
+	vector<vector<double>> newData(n, vector<double>(m));
+	rows = n;
+	cols = m;
+	data = newData;
+}
+
 void Matrix::setData(vector<vector<double>> data) {
 	checkData(data);
 	Matrix::data = data;
@@ -34,8 +46,8 @@ vector<vector<double>> Matrix::getData() {
 	return data;
 }
 
-double Matrix::operator()(int i, int j) {
-	return data[i][j];
+vector<double>& Matrix::operator[](const int n) {
+	return data[n];
 }
 
 int Matrix::getCols() {
@@ -52,7 +64,6 @@ Matrix::~Matrix()
 
 istream &operator >> (istream &input, Matrix &matrix) {
 	try {
-		vector<vector<double>> data;
 		int n = 0, m = 0;
 		input >> n >> m;
 		if (n < 0) {
@@ -63,22 +74,17 @@ istream &operator >> (istream &input, Matrix &matrix) {
 			cerr << "Nagative dimention of the matrix: " << m;
 			exit(1);
 		}
+		matrix = Matrix(n, m);
 		for (int i = 0; i < n; i++) {
-			vector<double> row;
 			for (int j = 0; j < m; j++) {
 				if (!input.eof()) {
-					double var;
-					input >> var;
-					row.push_back(var);
+					input >> matrix[i][j];
 				}
 				else {
 					break;
 				}
 			}
-			data.push_back(row);
-
 		}
-		matrix.setData(data);
 	}
 	catch (exception& e) {
 		cerr << "Unable to read matrix: " << e.what() << endl;
@@ -89,8 +95,7 @@ istream &operator >> (istream &input, Matrix &matrix) {
 ostream &operator << (ostream  &output, Matrix &matrix) {
 	for (int i = 0; i < matrix.getRows(); i++) {
 		for (int j = 0; j < matrix.getCols(); j++) {
-			//cout << matrix.getCell(i, j) << " ";
-			output << matrix(i, j) << " ";
+			output << matrix[i][j] << " ";
 		}
 		output << endl;
 	}
@@ -102,17 +107,15 @@ Matrix Matrix::operator*(Matrix matrix) {
 		cerr << "Dimensions does not match!";
 		exit(1);
 	}
-	vector<vector<double>> data;
-	for (int i = 0; i < getRows(); i++) {
-		vector<double> row;
-		for (int j = 0; j < matrix.getCols(); j++) {
-			double cellResult = 0;
-			for (int k = 0; k < getCols(); k++) {
-				cellResult += ((*this)(i, k)) * matrix(k, j);
-			}
-			row.push_back(cellResult);
+	Matrix resultMatrix(getRows(), matrix.getCols());
+	int i, j, ij;
+#pragma omp parallel for shared(matrix, resultMatrix) private(i, j, ij)
+	for (ij = 0; ij < getRows()*matrix.getCols(); ij++) {
+		i = ij / matrix.getCols();
+		j = ij % matrix.getCols();
+		for (int k = 0; k < getCols(); k++) {
+			resultMatrix[i][j] += ((*this)[i][k]) * matrix[k][j];
 		}
-		data.push_back(row);
 	}
-	return Matrix(data);
+	return resultMatrix;
 }

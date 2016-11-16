@@ -9,9 +9,10 @@ private:
 public:
 	Matrix();
 	Matrix(std::vector<std::vector<double>> data);
+	Matrix(int n, int j);
 	void setData(std::vector<std::vector<double>> data);
 	std::vector<std::vector<double>> getData();
-	double operator()(int i, int j);
+	std::vector<double>& operator[](const int n);
 	int getCols();
 	int getRows();
 	~Matrix();
